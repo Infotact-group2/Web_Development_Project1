@@ -24,6 +24,7 @@ const addtelemetry = async (req, res) => {
     }
 }
 
+
 const gettelemetry = async (req, res) => {
     try {
         const getvehicles = await vehicles.find();
@@ -42,6 +43,7 @@ const gettelemetry = async (req, res) => {
     }
 };
 
+
 const deletetelemetry=async (req,res)=>{
     try{
       const deletevehicle=await vehicles.findOneAndDelete({ vehicleId: req.params.id })
@@ -54,7 +56,7 @@ const deletetelemetry=async (req,res)=>{
           return res.status(200).json({
             success: true,
             message: "Telemetry deleted successfully"
-        });
+        })
     }catch(err){
         return res.status(400).json({msge:"something went wrong: "+ err.message})
     }
