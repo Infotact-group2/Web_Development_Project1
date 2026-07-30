@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FleetDash - Live Vehicle Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #f1f5f9;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      font-size: 22px;
+      margin-bottom: 4px;
+    }
+    p.subtitle {
+      color: #94a3b8;
+      margin-top: 0;
+      margin-bottom: 20px;
+    }
+    #status {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      margin-bottom: 20px;
+    }
+    .connected { background: #14532d; color: #4ade80; }
+    .disconnected { background: #450a0a; color: #f87171; }
+
+    #map-area {
+      position: relative;
+      width: 100%;
+      max-width: 700px;
+      height: 400px;
+      background: #1e293b;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #334155;
+    }
+    .vehicle-dot {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      background: #38bdf8;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #38bdf8;
+      transition: left 1.8s linear, top 1.8s linear;
+    }
+    .vehicle-label {
+      position: absolute;
+      font-size: 10px;
+      color: #cbd5e1;
+      transform: translateY(-16px);
+    }
+    table {
+      margin-top: 20px;
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 700px;
+    }
+    th, td {
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 1px solid #334155;
+      font-size: 14px;
+    }
+    th { color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <h1>FleetDash</h1>
+  <p class="subtitle">Live fleet telemetry (simulated data) — Week 1/2 build</p>
+  <span id="status" class="disconnected">Connecting...</span>
+
+  <div id="map-area"></div>
+
+  <table>
+    <thead>
+      <tr><th>Vehicle ID</th><th>Latitude</th><th>Longitude</th></tr>
+    </thead>
+    <tbody id="vehicle-table"></tbody>
+  </table>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const statusEl = document.getElementById("status");
+    const mapArea = document.getElementById("map-area");
+    const tableBody = document.getElementById("vehicle-table");
+
+    const BASE_LAT = 22.7196;
+    const BASE_LNG = 75.8577;
+    const SCALE = 4000; // pixels per degree, purely visual
+
+    socket.on("connect", () => {
+      statusEl.textContent = "Connected";
+      statusEl.className = "connected";
+    });
+
+    socket.on("disconnect", () => {
+      statusEl.textContent = "Disconnected";
+      statusEl.className = "disconnected";
+    });
+
+    function coordToPixels(lat, lng) {
+      const x = 350 + (lng - BASE_LNG) * SCALE;
+      const y = 200 - (lat - BASE_LAT) * SCALE;
+      return { x, y };
+    }
+
+    function renderVehicles(vehicles) {
+      // Update dots on the "map"
+      vehicles.forEach((v) => {
+        let dot = document.getElementById(`dot-${v.id}`);
+        let label = document.getElementById(`label-${v.id}`);
+        const { x, y } = coordToPixels(v.lat, v.lng);
+
+        if (!dot) {
+          dot = document.createElement("div");
+          dot.className = "vehicle-dot";
+          dot.id = `dot-${v.id}`;
+          mapArea.appendChild(dot);
+
+          label = document.createElement("div");
+          label.className = "vehicle-label";
+          label.id = `label-${v.id}`;
+          label.textContent = v.id;
+          mapArea.appendChild(label);
+        }
+
+        dot.style.left = `${x}px`;
+        dot.style.top = `${y}px`;
+        label.style.left = `${x - 10}px`;
+        label.style.top = `${y}px`;
+      });
+
+      // Update table
+      tableBody.innerHTML = vehicles
+        .map(
+          (v) =>
+            `<tr><td>${v.id}</td><td>${v.lat.toFixed(5)}</td><td>${v.lng.toFixed(5)}</td></tr>`
+        )
+        .join("");
+    }
+
+    socket.on("fleet:init", renderVehicles);
+    socket.on("fleet:update", renderVehicles);
+  </script>
+</body>
+</html>
