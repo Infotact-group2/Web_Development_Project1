@@ -16,7 +16,7 @@ export default function App() {
       setAlerts((prev) => [a, ...prev].slice(0, 50)); // low-frequency: safe as React state
       if (a.type === "ENTER") setFlash(Date.now());
     });
-    fetch(`${API}/api/geofences`).then((r) => r.json()).then(setFences).catch(() => { });
+    fetch(`${API}/api/geofences`).then((r) => r.json()).then(setFences).catch(() => {});
     return () => { off(); };
   }, []);
 
